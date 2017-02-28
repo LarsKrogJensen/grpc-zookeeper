@@ -1,0 +1,15 @@
+syntax = "proto3";
+option java_package = "com.byhiras.dist.common";
+
+option java_outer_classname = "Health";
+
+message Ping {
+}
+
+message Pong {
+    string msg = 1;
+}
+
+service PingPong {
+    rpc Pingit (Ping) returns (Pong);
+}
