@@ -29,35 +29,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.byhiras.dist.loadbalancing;
+package se.lars.grpc.loadbalancing;
 
-import java.net.SocketAddress;
 import java.util.List;
-import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
 
 import io.grpc.EquivalentAddressGroup;
-import io.grpc.Status;
 import io.grpc.TransportManager;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 
 /**
  * Manages a list of server addresses to round-robin on.
  */
 @ThreadSafe
-public class ServerList<T> {
-    protected final TransportManager<T> tm;
-    protected final List<EquivalentAddressGroup> list;
-    protected final T requestDroppingTransport;
+public class RoundRobinServerList<T> extends ServerList<T>{
 
-    protected ServerList(TransportManager<T> tm, List<EquivalentAddressGroup> list) {
-        this.tm = tm;
-        this.list = list;
-        this.requestDroppingTransport =
-                tm.createFailingTransport(Status.UNAVAILABLE.withDescription("Throttled by LB"));
+    private final AtomicLong currentIdx = new AtomicLong();
+
+    private RoundRobinServerList(TransportManager<T> tm, List<EquivalentAddressGroup> list) {
+        super(tm, list);
     }
 
     /**
@@ -69,47 +60,17 @@ public class ServerList<T> {
         if (list.isEmpty()){
             return requestDroppingTransport;
         }else{
-            return tm.getTransport(list.get(0));
+            return tm.getTransport(list.get((int)(currentIdx.getAndIncrement() % list.size())));
         }
-    }
-
-    @VisibleForTesting
-    public List<EquivalentAddressGroup> getList() {
-        return list;
-    }
-
-    public int size() {
-        return list.size();
     }
 
     @NotThreadSafe
-    public static class Builder<T> {
-        protected final ImmutableList.Builder<EquivalentAddressGroup> listBuilder =
-                ImmutableList.builder();
-        protected final TransportManager<T> tm;
-
+    public static class Builder<T> extends ServerList.Builder<T>{
         public Builder(TransportManager<T> tm) {
-            this.tm = tm;
+            super(tm);
         }
-
-        /**
-         * Adds a server to the list, or {@code null} for a drop entry.
-         */
-        public void add(@Nullable SocketAddress address) {
-            listBuilder.add(new EquivalentAddressGroup(address));
-        }
-
-        /**
-         * Adds a list of servers to the list grouped into a single {@link EquivalentAddressGroup}.
-         *
-         * @param addresses the addresses to add
-         */
-        public void addList(List<SocketAddress> addresses) {
-            listBuilder.add(new EquivalentAddressGroup(addresses));
-        }
-
-        public ServerList<T> build() {
-            return new ServerList<T>(tm, listBuilder.build());
+        public RoundRobinServerList<T> build() {
+            return new RoundRobinServerList<T>(tm, listBuilder.build());
         }
     }
 }

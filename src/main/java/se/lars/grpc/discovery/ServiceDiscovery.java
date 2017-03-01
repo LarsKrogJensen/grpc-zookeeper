@@ -1,4 +1,4 @@
-package com.byhiras.dist.discovery;
+package se.lars.grpc.discovery;
 
 import java.beans.ConstructorProperties;
 import java.io.Closeable;

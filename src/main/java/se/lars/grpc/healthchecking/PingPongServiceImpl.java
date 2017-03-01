@@ -1,9 +1,9 @@
-package com.byhiras.dist.healthchecking;
+package se.lars.grpc.healthchecking;
 
 import io.grpc.stub.StreamObserver;
+import se.lars.proto.Health;
+import se.lars.proto.PingPongGrpc;
 
-import com.byhiras.dist.common.Health;
-import com.byhiras.dist.common.PingPongGrpc;
 
 /**
  * Author stefanofranz

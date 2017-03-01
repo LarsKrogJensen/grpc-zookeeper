@@ -1,6 +1,7 @@
 syntax = "proto3";
-option java_package = "com.byhiras.dist.common";
+option java_package = "se.lars.proto";
 
+option optimize_for = SPEED;
 option java_outer_classname = "Health";
 
 message Ping {

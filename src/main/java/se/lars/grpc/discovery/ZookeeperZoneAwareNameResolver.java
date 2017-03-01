@@ -1,4 +1,4 @@
-package com.byhiras.dist.discovery;
+package se.lars.grpc.discovery;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -7,14 +7,12 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import io.grpc.Attributes;
 import io.grpc.NameResolver;
 import io.grpc.ResolvedServerInfo;
 
-import com.byhiras.dist.discovery.ServiceDiscovery.HostandZone;
 import com.google.common.base.Throwables;
 import io.grpc.ResolvedServerInfoGroup;
 import org.slf4j.Logger;
@@ -31,11 +29,11 @@ public class ZookeeperZoneAwareNameResolver extends NameResolver {
 
     private final URI targetUri;
     private final ServiceDiscovery serviceDiscovery;
-    private final Comparator<HostandZone> zoneComparator;
+    private final Comparator<ServiceDiscovery.HostandZone> zoneComparator;
 
     public ZookeeperZoneAwareNameResolver(URI targetUri,
                                           ServiceDiscovery serviceDiscovery,
-                                          Comparator<HostandZone> zoneComparator) {
+                                          Comparator<ServiceDiscovery.HostandZone> zoneComparator) {
         this.targetUri = targetUri;
         this.serviceDiscovery = serviceDiscovery;
         this.zoneComparator = zoneComparator;
@@ -53,7 +51,7 @@ public class ZookeeperZoneAwareNameResolver extends NameResolver {
         String serviceName = targetUri.getAuthority();
 
         try {
-            List<HostandZone> initialDiscovery = serviceDiscovery.discover(serviceName);
+            List<ServiceDiscovery.HostandZone> initialDiscovery = serviceDiscovery.discover(serviceName);
             logDiscoveredNodes(initialDiscovery);
             List<ResolvedServerInfoGroup> initialServers = convertToResolvedServers(initialDiscovery);
             listener.onUpdate(initialServers, Attributes.EMPTY);
@@ -73,12 +71,12 @@ public class ZookeeperZoneAwareNameResolver extends NameResolver {
 
     }
 
-    private void logDiscoveredNodes(List<HostandZone> nodes) {
+    private void logDiscoveredNodes(List<ServiceDiscovery.HostandZone> nodes) {
        log.info("Discovered nodes: {}",
-               nodes.stream().map(HostandZone::toString).collect(Collectors.joining(", ")));
+               nodes.stream().map(ServiceDiscovery.HostandZone::toString).collect(Collectors.joining(", ")));
     }
 
-    private List<ResolvedServerInfoGroup> convertToResolvedServers(List<HostandZone> newList) {
+    private List<ResolvedServerInfoGroup> convertToResolvedServers(List<ServiceDiscovery.HostandZone> newList) {
         return newList.stream()
                       .sorted(zoneComparator)
                       .map(hostandZone -> {
