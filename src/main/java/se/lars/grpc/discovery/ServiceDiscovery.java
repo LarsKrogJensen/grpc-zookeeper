@@ -1,13 +1,6 @@
 package se.lars.grpc.discovery;
 
-import java.beans.ConstructorProperties;
-import java.io.Closeable;
-import java.io.IOException;
-import java.net.URI;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Throwables;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -17,7 +10,12 @@ import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Throwables;
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Author stefanofranz
@@ -27,15 +25,14 @@ public class ServiceDiscovery implements Closeable {
     private static final String ZK_ROOT = "/services";
     private static final String ZK_DELIMETER = "/";
     protected final static Logger LOGGER = LoggerFactory.getLogger(ServiceDiscovery.class);
-    public static final String ZONE_DELIMITER_REGEX = "\\|\\*\\*\\|";
-    public static final String ZONE_DELIMITER = "|**|";
+    private static final String ZONE_DELIMITER_REGEX = "\\|\\*\\*\\|";
+    private static final String ZONE_DELIMITER = "|**|";
 
     private CuratorFramework curatorFramework;
 
     private final static String UNKNOWN_ZONE = "UNKN";
 
 
-    @ConstructorProperties({"address"})
     public ServiceDiscovery(final String address) {
         curatorFramework = CuratorFrameworkFactory.newClient(address, new ExponentialBackoffRetry(1000, 5));
         curatorFramework.start();

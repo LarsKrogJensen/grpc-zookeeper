@@ -2,14 +2,12 @@ package se.lars.grpc.example;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import se.lars.grpc.discovery.ZookeeperZoneAwareNameResolverProvider;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.util.RoundRobinLoadBalancerFactory;
-import se.lars.grpc.retry.RetryClientInterceptor;
-import se.lars.grpc.retry.Retryer;
+import se.lars.grpc.discovery.ZookeeperZoneAwareNameResolverProvider;
 import se.lars.proto.Health;
 import se.lars.proto.PingPongGrpc;
 
@@ -26,22 +24,22 @@ public class Client {
         ManagedChannel channel =
 //                ManagedChannelBuilder.forAddress("localhost", 8181)
                 ManagedChannelBuilder.forTarget("zk://demo")
-                                     .nameResolverFactory(ZookeeperZoneAwareNameResolverProvider.newBuilder()
-                                                                                                .setZookeeperAddress("localhost:2181")
-                                                                                                .build())
-                                     .usePlaintext(true)
-                                     .loadBalancerFactory(RoundRobinLoadBalancerFactory.getInstance())
-                                     .build();
-       PingPongGrpc.PingPongBlockingStub stub = PingPongGrpc.newBlockingStub(channel);
+                        .nameResolverFactory(ZookeeperZoneAwareNameResolverProvider.newBuilder()
+                                                     .setZookeeperAddress("localhost:2181")
+                                                     .build())
+                        .usePlaintext(true)
+                        .loadBalancerFactory(RoundRobinLoadBalancerFactory.getInstance())
+                        .build();
+        PingPongGrpc.PingPongBlockingStub stub = PingPongGrpc.newBlockingStub(channel);
         //PingPongGrpc.PingPongFutureStub stub = PingPongGrpc.newFutureStub(channel);
         //stub.withInterceptors(new RetryClientInterceptor(Retryer.createDefault().maxRetries(5)));
-
-        while (true) {
+        boolean forever = true;
+        while (forever) {
             //for (int i = 0; i < 100; i++) {
             try {
                 long start = System.nanoTime();
                 Health.Pong pong = withRetry(() -> stub.pingit(Health.Ping.newBuilder().build()), 5);
-                System.out.print(pong + " completed in: " + (System.nanoTime() - start)/1_000 + " us.");
+                System.out.print(pong + " completed in: " + (System.nanoTime() - start) / 1_000 + " us.");
 
 //                ListenableFuture<Health.Pong> pingit = stub.pingit(Health.Ping.newBuilder().build());
 //                pingit.addListener(() -> {
@@ -68,7 +66,7 @@ public class Client {
                 System.out.println("Failed, msg: " + e.getMessage());
             }
 //            try {
-//                Thread.sleep(200);
+//                Thread.sleep(2000);
 //            } catch (InterruptedException e) {
 //                e.printStackTrace();
 //            }
@@ -76,9 +74,11 @@ public class Client {
 //            System.in.read();
         }
         //channel.shutdown();
+
+        System.in.read();
     }
 
-    public static <T> T withRetry(Server.ExceptionalSupplier<T> supplier, int maxAttempts) {
+    private static <T> T withRetry(ExceptionalSupplier<T> supplier, int maxAttempts) {
         try {
             return supplier.supply();
         } catch (StatusRuntimeException e) {
@@ -122,4 +122,8 @@ public class Client {
         }, MoreExecutors.directExecutor());
 
     }
+}
+
+interface ExceptionalSupplier<T> {
+    T supply() throws Exception;
 }
